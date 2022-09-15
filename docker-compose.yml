@@ -1,0 +1,56 @@
+version: "3.3"
+
+services:
+  nginx:
+    image: nginx:latest    
+    container_name: nginx_laravel_56
+    ports:
+      - "80:80"
+      - "443:443"
+    hostname: "laravel56.my"
+    restart: unless-stopped
+    volumes:
+      - ./volumes/www/shell/nginx/init.sh:/docker-entrypoint.d/init.sh
+      - ./volumes/nginx/ssl:/etc/nginx/ssl/         
+      - ./volumes/nginx/conf.d:/etc/nginx/conf.d
+      - ./volumes/www:/var/www
+      - ./volumes/nginx/logs:/var/log/nginx/
+  php:
+    build: 
+      context: .
+      dockerfile: ./services/php/Dockerfile
+    image: php_laravel_56
+    container_name: php_laravel_56
+    restart: unless-stopped
+    environment:
+      - DB_HOST=${MYSQL_HOST}
+      - DB_USERNAME=${MYSQL_USER}
+      - DB_PASSWORD=${MYSQL_PASSWORD}
+      - DB_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - DB_DATABASE=${MYSQL_DATABASE}
+    entrypoint: ["/bin/bash", "/var/www/shell/docker-entrypoint.sh"]
+    command: ["php-fpm"]  
+    volumes:
+      - ./volumes/mnt:/home/mnt
+      - ./.env:/home/variables/.env:ro
+      - ./volumes/www:/var/www
+      - ./volumes/php/php.ini:/usr/local/etc/php/php.ini:ro,delegated
+    depends_on:
+      - mysql
+    ports:
+      - "9003:9003"  
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    container_name: mysql_laravel_56
+    ports: 
+      - 3306:3306
+    environment:
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    volumes:
+      - ./volumes/MySQL/databases:/var/lib/mysql
+      - ./volumes/MySQL/conf/my.cnf:/etc/mysql/conf.d/my.cnf:ro,delegated
+      - ./volumes/www/shell/sql:/home/sql

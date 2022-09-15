@@ -1,0 +1,1 @@
+mysql -hmysql -uroot -ppass4me2root laravel < /home/sql/clear.sql
